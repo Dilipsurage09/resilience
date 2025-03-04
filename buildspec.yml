@@ -26,8 +26,8 @@ phases:
           echo "Attempting to publish new version... (Attempt: $((attempt+1)))"
           NEW_VERSION=$(aws lambda publish-version --function-name mylambdafunction-1 --query "Version" --output text || echo "0")
           if [ "$NEW_VERSION" = "0" ]; then
-            echo "Publish failed due to resource conflict, retrying in 10 seconds..."
-            sleep 10
+            echo "Publish failed due to resource conflict, retrying in 20 seconds..."
+            sleep 20
           fi
           attempt=$((attempt+1))
         done
@@ -58,8 +58,10 @@ phases:
           if [ "$CURRENT_VERSION" = "0" ]; then
             echo "No previous version found! Exiting rollback."
             exit 1
+          else
+            aws lambda update-alias --function-name mylambdafunction-1 --name Prod --function-version $CURRENT_VERSION
+            echo "Rollback successful. Alias 'Prod' now points to version $CURRENT_VERSION."
           fi
-          aws lambda update-alias --function-name mylambdafunction-1 --name Prod --function-version $CURRENT_VERSION
         else
           echo "Updating alias to new version $NEW_VERSION"
           aws lambda update-alias --function-name mylambdafunction-1 --name Prod --function-version $NEW_VERSION
