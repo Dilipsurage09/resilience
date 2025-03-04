@@ -47,6 +47,8 @@ phases:
         if [ "$EXISTING_APP" != "lambda-1" ]; then
           echo "Resilience Hub application 'lambda-1' does not exist. Creating it..."
           aws resiliencehub create-app --name lambda-1
+        else
+          echo "Resilience Hub application 'lambda-1' already exists."
         fi
 
       # Add Lambda function to Resilience Hub
