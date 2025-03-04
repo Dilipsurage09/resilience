@@ -48,4 +48,5 @@ phases:
           aws lambda update-alias --function-name mylambdafunction-1 --name Prod --function-version $NEW_VERSION;
         fi
 artifacts:
-  files: deployment.zip
+  files:
+    - deployment.zip
