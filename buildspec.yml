@@ -40,7 +40,16 @@ phases:
           exit 1
         fi
 
-      # Add Lambda function to Resilience Hub application
+      # Check if Resilience Hub application exists
+      - |
+        echo "Checking if Resilience Hub application 'lambda-1' exists..."
+        EXISTING_APP=$(aws resiliencehub list-apps --query "apps[?appName=='lambda-1'].appName" --output text)
+        if [ "$EXISTING_APP" != "lambda-1" ]; then
+          echo "Resilience Hub application 'lambda-1' does not exist. Creating it..."
+          aws resiliencehub create-app --app-name lambda-1
+        fi
+
+      # Add Lambda function to Resilience Hub
       - |
         echo "Adding Lambda function to Resilience Hub..."
         aws resiliencehub add-resource-to-app --app-name lambda-1 --resource-type LambdaFunction --resource-arn arn:aws:lambda:us-east-1:980921749870:function:mylambdafunction-1
