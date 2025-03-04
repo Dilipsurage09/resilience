@@ -22,10 +22,10 @@ phases:
       - |
         attempt=0
         NEW_VERSION="0"
-        while [[ "$NEW_VERSION" == "0" && $attempt -lt 5 ]]; do
+        while [ "$NEW_VERSION" = "0" ] && [ $attempt -lt 5 ]; do
           echo "Attempting to publish new version... (Attempt: $((attempt+1)))"
           NEW_VERSION=$(aws lambda publish-version --function-name mylambdafunction-1 --query "Version" --output text || echo "0")
-          if [[ "$NEW_VERSION" == "0" ]]; then
+          if [ "$NEW_VERSION" = "0" ]; then
             echo "Publish failed due to resource conflict, retrying in 10 seconds..."
             sleep 10
           fi
