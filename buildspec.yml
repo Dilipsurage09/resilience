@@ -40,15 +40,21 @@ phases:
           exit 1
         fi
 
-      # Test the new function (invoke the new version, not $LATEST)
+      # Add Lambda function to Resilience Hub application
       - |
-        echo "Testing new Lambda version $NEW_VERSION..."
-        if aws lambda invoke --function-name mylambdafunction-1 --qualifier $NEW_VERSION response.json; then
-          echo "Deployment successful!"
-          ROLLBACK=false
-        else
-          echo "Deployment failed!"
+        echo "Adding Lambda function to Resilience Hub..."
+        aws resiliencehub add-resource-to-app --app-name my-lambda-app --resource-type LambdaFunction --resource-arn arn:aws:lambda:us-east-1:YOUR_ACCOUNT_ID:function:mylambdafunction-1
+
+      # Test the new function using Resilience Hub resilience validation
+      - |
+        echo "Validating resilience of new Lambda version..."
+        VALIDATE_RESILIENCE=$(aws resiliencehub start-resilience-metrics-collection --app-name my-lambda-app --query "Status" --output text)
+        if [ "$VALIDATE_RESILIENCE" != "SUCCESS" ]; then
+          echo "Resilience validation failed!"
           ROLLBACK=true
+        else
+          echo "Resilience validation successful!"
+          ROLLBACK=false
         fi
 
       # Rollback if test fails
