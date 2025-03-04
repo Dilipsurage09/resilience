@@ -43,12 +43,12 @@ phases:
       # Add Lambda function to Resilience Hub application
       - |
         echo "Adding Lambda function to Resilience Hub..."
-        aws resiliencehub add-resource-to-app --app-name my-lambda-app --resource-type LambdaFunction --resource-arn arn:aws:lambda:us-east-1:YOUR_ACCOUNT_ID:function:mylambdafunction-1
+        aws resiliencehub add-resource-to-app --app-name lambda-1 --resource-type LambdaFunction --resource-arn arn:aws:lambda:us-east-1:980921749870:function:mylambdafunction-1
 
       # Test the new function using Resilience Hub resilience validation
       - |
         echo "Validating resilience of new Lambda version..."
-        VALIDATE_RESILIENCE=$(aws resiliencehub start-resilience-metrics-collection --app-name my-lambda-app --query "Status" --output text)
+        VALIDATE_RESILIENCE=$(aws resiliencehub start-resilience-metrics-collection --app-name lambda-1 --query "Status" --output text)
         if [ "$VALIDATE_RESILIENCE" != "SUCCESS" ]; then
           echo "Resilience validation failed!"
           ROLLBACK=true
