@@ -40,10 +40,10 @@ phases:
           exit 1
         fi
 
-      # Test the new function
+      # Test the new function (invoke the new version, not $LATEST)
       - |
-        echo "Testing new Lambda version..."
-        if aws lambda invoke --function-name mylambdafunction-1 response.json; then
+        echo "Testing new Lambda version $NEW_VERSION..."
+        if aws lambda invoke --function-name mylambdafunction-1 --qualifier $NEW_VERSION response.json; then
           echo "Deployment successful!"
           ROLLBACK=false
         else
