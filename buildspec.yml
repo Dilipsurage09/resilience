@@ -19,7 +19,7 @@ phases:
       - RESILIENCE_STATUS=$(aws resiliencehub describe-app --app-name lambda-1 --query "appStatus" --output text)
       - if [ "$RESILIENCE_STATUS" != "HEALTHY" ]; then
           echo "Error detected in new Lambda version. Rolling back...";
-          aws lambda update-alias --function-name mylambdafunction-1 --name PROD --function-version previous_version;
+          aws lambda update-alias --function-name mylambdafunction-1 --name PROD --function-version <previous-version>;
         fi
 artifacts:
   files:
