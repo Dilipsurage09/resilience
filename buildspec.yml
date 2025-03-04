@@ -1,13 +1,16 @@
 version: 0.2
+
 phases:
   install:
     commands:
       - echo Installing dependencies...
       - npm install
+
   build:
     commands:
       - echo Running tests...
       - npm test
+
   post_build:
     commands:
       - echo Deploying Lambda function...
@@ -17,10 +20,12 @@ phases:
       - echo New Lambda version: $NEW_VERSION
       - echo "Checking Resilience Hub for errors..."
       - RESILIENCE_STATUS=$(aws resiliencehub describe-app --app-name lambda-1 --query "appStatus" --output text)
-      - if [ "$RESILIENCE_STATUS" != "HEALTHY" ]; then
+      - |
+        if [ "$RESILIENCE_STATUS" != "HEALTHY" ]; then
           echo "Error detected in new Lambda version. Rolling back...";
           aws lambda update-alias --function-name mylambdafunction-1 --name PROD --function-version <previous-version>;
         fi
+
 artifacts:
   files:
     - deployment.zip
