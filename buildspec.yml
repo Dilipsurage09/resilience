@@ -20,10 +20,11 @@ phases:
       - echo New Lambda version: $NEW_VERSION
       - echo "Checking Resilience Hub for errors..."
       - RESILIENCE_STATUS=$(aws resiliencehub describe-app --app-name lambda-1 --query "appStatus" --output text)
+      - echo "Resilience Status: $RESILIENCE_STATUS"
       - |
         if [ "$RESILIENCE_STATUS" != "HEALTHY" ]; then
-          echo "Error detected in new Lambda version. Rolling back...";
-          aws lambda update-alias --function-name mylambdafunction-1 --name PROD --function-version <previous-version>;
+          echo "Error detected in new Lambda version. Rolling back..."
+          aws lambda update-alias --function-name mylambdafunction-1 --name PROD --function-version <previous-version>
         fi
 
 artifacts:
