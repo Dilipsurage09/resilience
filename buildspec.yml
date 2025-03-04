@@ -1,0 +1,33 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      nodejs: 18
+  build:
+    commands:
+      - echo "Packaging Lambda function..."
+      - zip -r deployment.zip index.js
+      
+      # Get current alias version (Production version)
+      - export CURRENT_VERSION=$(aws lambda get-alias --function-name MyLambdaFunction-1 --name Prod --query "FunctionVersion" --output text)
+      
+      # Deploy the new function version
+      - aws lambda update-function-code --function-name MyLambdaFunction-1 --zip-file fileb://deployment.zip
+      
+      # Publish new version
+      - export NEW_VERSION=$(aws lambda publish-version --function-name MyLambdaFunction-1 --query "Version" --output text)
+      
+      # Test the new function
+      - echo "Testing new Lambda version..."
+      - aws lambda invoke --function-name MyLambdaFunction-1 response.json || export ROLLBACK=true
+      
+      # Rollback if the new function fails
+      - if [ "$ROLLBACK" == "true" ]; then
+          echo "Deployment failed! Rolling back to previous version $CURRENT_VERSION";
+          aws lambda update-alias --function-name MyLambdaFunction-1 --name Prod --function-version $CURRENT_VERSION;
+        else
+          echo "Deployment successful! Updating alias to new version $NEW_VERSION";
+          aws lambda update-alias --function-name MyLambdaFunction-1 --name Prod --function-version $NEW_VERSION;
+        fi
+artifacts:
+  files: deployment.zip
