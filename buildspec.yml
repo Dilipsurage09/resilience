@@ -1,8 +1,10 @@
 version: 0.2
+
 phases:
   install:
     runtime-versions:
       nodejs: 18
+
   build:
     commands:
       - echo "Packaging Lambda function..."
@@ -13,7 +15,7 @@ phases:
       - NEW_VERSION=$(aws lambda publish-version --function-name mylambdafunction-1 --query Version --output text)
       - echo "New Version: $NEW_VERSION"
       - |
-        if [ -z "$NEW_VERSION" ] || [ "$NEW_VERSION" = "0" ]; then 
+        if [ -z "$NEW_VERSION" ] || [ "$NEW_VERSION" == "0" ]; then
           echo "Error publishing new version!"
           exit 1
         fi
