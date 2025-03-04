@@ -1,89 +1,26 @@
 version: 0.2
-
 phases:
   install:
-    runtime-versions:
-      nodejs: 18
-
+    commands:
+      - echo Installing dependencies...
+      - npm install
   build:
     commands:
-      - echo "Packaging Lambda function..."
-      - zip -r deployment.zip index.js
-
-      # Get current alias version (Production version)
-      - |
-        CURRENT_VERSION=$(aws lambda get-alias --function-name mylambdafunction-1 --name Prod --query "FunctionVersion" --output text || echo "0")
-        echo "Current Lambda Version: $CURRENT_VERSION"
-
-      # Deploy the new function version
+      - echo Running tests...
+      - npm test
+  post_build:
+    commands:
+      - echo Deploying Lambda function...
       - aws lambda update-function-code --function-name mylambdafunction-1 --zip-file fileb://deployment.zip
-
-      # Publish new version with retry logic for ResourceConflictException
-      - |
-        attempt=0
-        NEW_VERSION="0"
-        while [ "$NEW_VERSION" = "0" ] && [ $attempt -lt 5 ]; do
-          echo "Attempting to publish new version... (Attempt: $((attempt+1)))"
-          NEW_VERSION=$(aws lambda publish-version --function-name mylambdafunction-1 --query "Version" --output text || echo "0")
-          if [ "$NEW_VERSION" = "0" ]; then
-            echo "Publish failed due to resource conflict, retrying in 20 seconds..."
-            sleep 20
-          fi
-          attempt=$((attempt+1))
-        done
-        echo "New Lambda Version: $NEW_VERSION"
-
-      # Ensure NEW_VERSION is valid
-      - |
-        if [ "$NEW_VERSION" = "0" ]; then
-          echo "Error publishing new version! Exiting."
-          exit 1
+      - echo Publishing new Lambda version...
+      - NEW_VERSION=$(aws lambda publish-version --function-name mylambdafunction-1 --query "Version" --output text)
+      - echo New Lambda version: $NEW_VERSION
+      - echo "Checking Resilience Hub for errors..."
+      - RESILIENCE_STATUS=$(aws resiliencehub describe-app --app-name lambda-1 --query "appStatus" --output text)
+      - if [ "$RESILIENCE_STATUS" != "HEALTHY" ]; then
+          echo "Error detected in new Lambda version. Rolling back...";
+          aws lambda update-alias --function-name mylambdafunction-1 --name PROD --function-version previous_version;
         fi
-
-      # Check if Resilience Hub application exists
-      - |
-        echo "Checking if Resilience Hub application 'lambda-1' exists..."
-        EXISTING_APP=$(aws resiliencehub describe-apps --query "apps[?appName=='lambda-1'].appName" --output text)
-        if [ "$EXISTING_APP" != "lambda-1" ]; then
-          echo "Resilience Hub application 'lambda-1' does not exist. Creating it..."
-          aws resiliencehub create-app --name lambda-1
-        else
-          echo "Resilience Hub application 'lambda-1' already exists, skipping creation."
-        fi
-
-      # Add Lambda function to Resilience Hub
-      - |
-        echo "Adding Lambda function to Resilience Hub..."
-        aws resiliencehub add-resource-to-app --app-name lambda-1 --resource-type LambdaFunction --resource-arn arn:aws:lambda:us-east-1:980921749870:function:mylambdafunction-1
-
-      # Test the new function using Resilience Hub resilience validation
-      - |
-        echo "Validating resilience of new Lambda version..."
-        VALIDATE_RESILIENCE=$(aws resiliencehub start-resilience-metrics-collection --app-name lambda-1 --query "Status" --output text)
-        if [ "$VALIDATE_RESILIENCE" != "SUCCESS" ]; then
-          echo "Resilience validation failed!"
-          ROLLBACK=true
-        else
-          echo "Resilience validation successful!"
-          ROLLBACK=false
-        fi
-
-      # Rollback if test fails
-      - |
-        if [ "$ROLLBACK" = "true" ]; then
-          echo "Rolling back to previous version $CURRENT_VERSION"
-          if [ "$CURRENT_VERSION" = "0" ]; then
-            echo "No previous version found! Exiting rollback."
-            exit 1
-          else
-            aws lambda update-alias --function-name mylambdafunction-1 --name Prod --function-version $CURRENT_VERSION
-            echo "Rollback successful. Alias 'Prod' now points to version $CURRENT_VERSION."
-          fi
-        else
-          echo "Updating alias to new version $NEW_VERSION"
-          aws lambda update-alias --function-name mylambdafunction-1 --name Prod --function-version $NEW_VERSION
-        fi
-
 artifacts:
   files:
     - deployment.zip
