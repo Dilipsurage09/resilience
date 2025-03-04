@@ -43,7 +43,7 @@ phases:
       # Check if Resilience Hub application exists
       - |
         echo "Checking if Resilience Hub application 'lambda-1' exists..."
-        EXISTING_APP=$(aws resiliencehub list-apps --query "apps[?appName=='lambda-1'].appName" --output text)
+        EXISTING_APP=$(aws resiliencehub describe-apps --query "apps[?appName=='lambda-1'].appName" --output text)
         if [ "$EXISTING_APP" != "lambda-1" ]; then
           echo "Resilience Hub application 'lambda-1' does not exist. Creating it..."
           aws resiliencehub create-app --name lambda-1
