@@ -1,23 +1,27 @@
 version: 0.2
+
 phases:
   install:
     runtime-versions:
       nodejs: 18
+
   build:
     commands:
       - echo "Packaging Lambda function..."
       - zip -r deployment.zip index.js
 
       # Get current alias version (Production version)
-      - export CURRENT_VERSION=$(aws lambda get-alias --function-name mylambdafunction-1 --name Prod --query "FunctionVersion" --output text || echo "0")
-      - echo "Current Lambda Version: $CURRENT_VERSION"
+      - |
+        CURRENT_VERSION=$(aws lambda get-alias --function-name mylambdafunction-1 --name Prod --query "FunctionVersion" --output text || echo "0")
+        echo "Current Lambda Version: $CURRENT_VERSION"
 
       # Deploy the new function version
       - aws lambda update-function-code --function-name mylambdafunction-1 --zip-file fileb://deployment.zip
 
       # Publish new version
-      - export NEW_VERSION=$(aws lambda publish-version --function-name mylambdafunction-1 --query "Version" --output text || echo "0")
-      - echo "New Lambda Version: $NEW_VERSION"
+      - |
+        NEW_VERSION=$(aws lambda publish-version --function-name mylambdafunction-1 --query "Version" --output text || echo "0")
+        echo "New Lambda Version: $NEW_VERSION"
 
       # Ensure NEW_VERSION is valid
       - |
@@ -27,14 +31,14 @@ phases:
         fi
 
       # Test the new function
-      - echo "Testing new Lambda version..."
       - |
+        echo "Testing new Lambda version..."
         if aws lambda invoke --function-name mylambdafunction-1 response.json; then
           echo "Deployment successful!"
-          export ROLLBACK=false
+          ROLLBACK=false
         else
           echo "Deployment failed!"
-          export ROLLBACK=true
+          ROLLBACK=true
         fi
 
       # Rollback if test fails
